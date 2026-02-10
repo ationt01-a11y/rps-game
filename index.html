@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>실시간 가위바위보 대결</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; background: #f8f9fa; }
+        .choice-btn { font-size: 30px; padding: 20px; margin: 10px; cursor: pointer; border: none; border-radius: 10px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .choice-btn:hover { background: #e9ecef; }
+        #status { font-size: 1.2rem; color: #007bff; margin: 20px; font-weight: bold; }
+        #result { font-size: 2rem; margin-top: 30px; }
+        strong { color: #e91e63; }
+    </style>
+</head>
+<body>
+    <h1>⚔️ 온라인 가위바위보</h1>
+    <div id="status">상대방을 기다리는 중...</div>
+    
+    <div id="game-buttons">
+        <button class="choice-btn" onclick="makeChoice('가위')">✌️</button>
+        <button class="choice-btn" onclick="makeChoice('바위')">✊</button>
+        <button class="choice-btn" onclick="makeChoice('보')">✋</button>
+    </div>
+
+    <div id="result"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    // 1. Firebase 설정 (입력하신 정보 그대로 유지)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBj9_ZYpq3t_K4mM6ESfvFIK2zh03dFI6Q",
+      authDomain: "rps-multi-53875.firebaseapp.com",
+      databaseURL: "https://rps-multi-53875-default-rtdb.firebaseio.com",
+      projectId: "rps-multi-53875",
+      storageBucket: "rps-multi-53875.firebasestorage.app",
+      messagingSenderId: "1052388926633",
+      appId: "1:1052388926633:web:481cade994c35a4606f5b8"
+    };
+
+    // 2. Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 3. 플레이어 설정
+    const playerId = prompt("플레이어 번호를 입력하세요 (1 또는 2)");
+    const myPath = `game/player${playerId}`;
+
+    // 4. 선택 함수 (버튼 클릭 시)
+    window.makeChoice = function(choice) {
+        update(ref(db, myPath), { choice: choice });
+        document.getElementById('status').innerText = `당신의 선택: ${choice}. 상대방을 기다리는 중...`;
+    };
+
+    // 5. 승패 판정 로직 함수
+    function getGameResult(me, opponent) {
+        if (me === opponent) return "🤝 무승부입니다!";
+        if (
+            (me === '가위' && opponent === '보') ||
+            (me === '바위' && opponent === '가위') ||
+            (me === '보' && opponent === '바위')
+        ) return "🎉 당신이 승리했습니다!";
+        return "💀 당신이 패배했습니다...";
+    }
+
+    // 6. 실시간 데이터 감시 (전체 게임 상황)
+    onValue(ref(db, 'game'), (snapshot) => {
+        const gameData = snapshot.val();
+        if (!gameData) return;
+
+        const p1 = gameData.player1?.choice;
+        const p2 = gameData.player2?.choice;
+
+        // 두 플레이어 모두 선택했을 때 결과 출력
+        if (p1 && p2) {
+            const myChoice = (playerId === '1') ? p1 : p2;
+            const opponentChoice = (playerId === '1') ? p2 : p1;
+            const resultText = getGameResult(myChoice, opponentChoice);
+            
+            document.getElementById('status').innerText = "게임 종료!";
+            document.getElementById('result').innerHTML = `
+                나: ${myChoice} vs 상대: ${opponentChoice}<br>
+                <strong>${resultText}</strong><br>
+                <button onclick="resetGame()" style="margin-top:20px; padding:10px;">다시 하기</button>
+            `;
+        }
+    });
+
+    // 7. 게임 리셋 함수
+    window.resetGame = function() {
+        update(ref(db, 'game/player1'), { choice: null });
+        update(ref(db, 'game/player2'), { choice: null });
+        document.getElementById('result').innerHTML = "";
+        document.getElementById('status').innerText = "새 게임 시작! 선택해 주세요.";
+    };
+</script>
+</body>
+</html>
