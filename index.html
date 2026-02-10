@@ -28,7 +28,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // 1. Firebase 설정 (입력하신 정보 그대로 유지)
+    // 1. Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyBj9_ZYpq3t_K4mM6ESfvFIK2zh03dFI6Q",
       authDomain: "rps-multi-53875.firebaseapp.com",
@@ -43,9 +43,13 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 3. 플레이어 설정
-    const playerId = prompt("플레이어 번호를 입력하세요 (1 또는 2)");
+    // 3. 플레이어 및 이름 설정
+    const userName = prompt("당신의 이름을 입력하세요.") || "익명";
+    const playerId = prompt(`${userName}님, 플레이어 번호를 선택하세요 (1 또는 2)`);
     const myPath = `game/player${playerId}`;
+
+    // 접속하자마자 내 이름을 DB에 저장
+    update(ref(db, myPath), { name: userName, choice: null });
 
     // 4. 선택 함수 (버튼 클릭 시)
     window.makeChoice = function(choice) {
@@ -64,36 +68,4 @@
         return "💀 당신이 패배했습니다...";
     }
 
-    // 6. 실시간 데이터 감시 (전체 게임 상황)
-    onValue(ref(db, 'game'), (snapshot) => {
-        const gameData = snapshot.val();
-        if (!gameData) return;
-
-        const p1 = gameData.player1?.choice;
-        const p2 = gameData.player2?.choice;
-
-        // 두 플레이어 모두 선택했을 때 결과 출력
-        if (p1 && p2) {
-            const myChoice = (playerId === '1') ? p1 : p2;
-            const opponentChoice = (playerId === '1') ? p2 : p1;
-            const resultText = getGameResult(myChoice, opponentChoice);
-            
-            document.getElementById('status').innerText = "게임 종료!";
-            document.getElementById('result').innerHTML = `
-                나: ${myChoice} vs 상대: ${opponentChoice}<br>
-                <strong>${resultText}</strong><br>
-                <button onclick="resetGame()" style="margin-top:20px; padding:10px;">다시 하기</button>
-            `;
-        }
-    });
-
-    // 7. 게임 리셋 함수
-    window.resetGame = function() {
-        update(ref(db, 'game/player1'), { choice: null });
-        update(ref(db, 'game/player2'), { choice: null });
-        document.getElementById('result').innerHTML = "";
-        document.getElementById('status').innerText = "새 게임 시작! 선택해 주세요.";
-    };
-</script>
-</body>
-</html>
+    //
