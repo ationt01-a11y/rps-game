@@ -68,4 +68,43 @@
         return "💀 당신이 패배했습니다...";
     }
 
-    //
+    // 6. 실시간 데이터 감시 (이 부분이 빠져있었습니다!)
+    onValue(ref(db, 'game'), (snapshot) => {
+        const gameData = snapshot.val();
+        if (!gameData) return;
+
+        const p1 = gameData.player1?.choice;
+        const p1Name = gameData.player1?.name || "플레이어 1";
+        const p2 = gameData.player2?.choice;
+        const p2Name = gameData.player2?.name || "플레이어 2";
+
+        if (p1 && p2) {
+            const myChoice = (playerId === '1') ? p1 : p2;
+            const opponentChoice = (playerId === '1') ? p2 : p1;
+            const opponentName = (playerId === '1') ? p2Name : p1Name;
+            
+            const resultText = getGameResult(myChoice, opponentChoice);
+            
+            document.getElementById('status').innerText = "게임 종료!";
+            document.getElementById('result').innerHTML = `
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: inline-block;">
+                    <p><strong>${userName}</strong>(나): ${myChoice}</p>
+                    <p><strong>${opponentName}</strong>(상대): ${opponentChoice}</p>
+                    <hr>
+                    <h2 style="color: #ff4757;">${resultText}</h2>
+                    <button onclick="resetGame()" style="margin-top:10px; padding:10px 20px; cursor:pointer; background:#007bff; color:white; border:none; border-radius:5px;">한 판 더 하기</button>
+                </div>
+            `;
+        }
+    });
+
+    // 7. 게임 리셋 함수
+    window.resetGame = function() {
+        update(ref(db, 'game/player1'), { choice: null });
+        update(ref(db, 'game/player2'), { choice: null });
+        document.getElementById('result').innerHTML = "";
+        document.getElementById('status').innerText = "새 게임 시작! 선택해 주세요.";
+    };
+</script>
+</body>
+</html>
